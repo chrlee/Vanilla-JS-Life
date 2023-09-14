@@ -1,9 +1,21 @@
 class Canvas {
-    constructor(width, height) {
+    constructor(animate, width, height, fps = 2) {
         this.width = width;
         this.height = height;
-        this.canvas = this.createCanvas();
+        this.fps = fps;
+        this.element = this.createCanvas();
         this.buffer = this.canvasImageData();
+        this.paused = true;
+
+        window.requestAnimationFrame = window.requestAnimationFrame ||
+                               window.mozRequestAnimationFrame ||
+                               window.webkitRequestAnimationFrame ||             
+                               window.msRequestAnimationFrame;
+        document.addEventListener('keydown', () => {
+            console.log(this.paused);
+            this.paused = !this.paused;
+        })
+        this.startAnimation(animate);
     }
     createCanvas() {
         const canvas = document.createElement('canvas');
@@ -17,7 +29,7 @@ class Canvas {
         return canvas;
     }
     canvasContext() {
-        return this.canvas.getContext('2d');
+        return this.element.getContext('2d');
     }
     canvasImageData() {
         return this.canvasContext().getImageData(0, 0, this.width, this.height);
@@ -39,42 +51,125 @@ class Canvas {
     updateCanvas() {
         this.canvasContext().putImageData(this.buffer, 0, 0);
     }
-};
-
-class Life extends Canvas {
-    constructor(width, height){
-        super(width, height);
-        this.paused = true;
-
-        window.requestAnimationFrame = window.requestAnimationFrame ||
-                               window.mozRequestAnimationFrame ||
-                               window.webkitRequestAnimationFrame ||             
-                               window.msRequestAnimationFrame;
-        document.addEventListener('keydown', () => {
-            console.log(this.paused);
-            this.paused = !this.paused;
-        })
-        const start = this.startAnimation();
-    }
-    startAnimation() {
+    startAnimation(update) {
         const animate = this.startAnimation.bind(this);
         if(!this.paused){
-            this.randomizePixels();
-            this.updateCanvas();
+            update();
         }
 
         setTimeout(() => {
-            requestAnimationFrame(animate);
-        }, 1000);
+            requestAnimationFrame(() => animate(update));
+        }, 1000 / this.fps);
     }
+};
 
+class Life {
+    constructor(width, height){
+        this.width = width;
+        this.height = height;
+        this.canvas = new Canvas(this.setAllPixels.bind(this), width, height, 30);
+        this.gridBuf = [...Array(height)].map(() => Array(width).fill(false));
+        this.gridState = this.gridBuf.map((arr) => arr.slice());
+        this.randomSeed();
+    }
+    randomSeed() {
+        for(let y = 0; y < this.height; ++y) {
+            for(let x = 0; x < this.width; ++x) {
+                const live = Math.floor(Math.random() * 25) < 1 ;
+                this.gridBuf[y][x] = live;
+            }
+        }
+        for(let y = 0; y < this.height; ++y) {
+            for(let x = 0; x < this.width; ++x) {
+                const color = this.gridBuf[y][x] ? [255, 255, 255, 255] : [0, 0, 0, 255];
+                this.canvas.setPixel(x, y, ...color);
+            }
+        }
+        this.gridState = this.gridBuf.map((arr) => arr.slice()); 
+        this.canvas.updateCanvas();
+    }
+    setAllPixels() {
+        for(let y = 0; y < this.height; ++y) {
+            for(let x = 0; x < this.width; ++x) {
+                const live = this.checkPixel(x, y);
+                this.gridBuf[y][x] = live;
+            }
+        }
+        for(let y = 0; y < this.height; ++y) {
+            for(let x = 0; x < this.width; ++x) {
+                const color = this.gridBuf[y][x] ? [255, 255, 255, 255] : [0, 0, 0, 255];
+                this.canvas.setPixel(x, y, ...color);
+            }
+        }
+        this.gridState = this.gridBuf.map((arr) => arr.slice());
+        this.canvas.updateCanvas();
+    }
+    checkPixel(x, y) {
+        const live = this.gridState[y][x];
+        const liveNeighbors = this.getValidNeighbors(x, y).reduce((acc, curr) => acc + curr, 0);
+        if(liveNeighbors < 2) return false;
+        else if(liveNeighbors == 2 && live) return true;
+        else if(liveNeighbors === 3) return true;
+        return false;
+    }
+    getValidNeighbors(x, y) {
+        const neighborTranslation = [
+            [-1, -1], [0, -1], [1, -1],
+            [-1, 0], /* pix */ [1, 0],
+            [-1, 1], [0, 1], [1, 1]
+        ]
+        const topEdge = y === 0;
+        const bottomEdge = y === this.height - 1;
+        const leftEdge = x === 0;
+        const rightEdge = x === this.width - 1;
+
+        if(topEdge) {
+            neighborTranslation[0] = false;
+            neighborTranslation[1] = false;
+            neighborTranslation[2] = false;
+        }
+        if(bottomEdge) {
+            neighborTranslation[5] = false;
+            neighborTranslation[6] = false;
+            neighborTranslation[7] = false;
+        }
+        if(leftEdge) {
+            neighborTranslation[0] = false;
+            neighborTranslation[3] = false;
+            neighborTranslation[5] = false;
+        }
+        if(rightEdge) {
+            neighborTranslation[2] = false;
+            neighborTranslation[4] = false;
+            neighborTranslation[7] = false;
+        }
+        return neighborTranslation.reduce((acc, neighbor) => {
+            if(neighbor) acc.push(this.gridState[y + neighbor[1]][x + neighbor[0]]);
+            return acc;
+        }, [])
+    }
 }
 
 const GRID_WIDTH = 100;
 const GRID_HEIGHT = 100;
 
-const canvas = new Life(GRID_WIDTH, GRID_HEIGHT);
-document.body.append(canvas.canvas);
-canvas.randomizePixels();
-canvas.updateCanvas();
-console.log(canvas.canvasImageData());
+const life = new Life(GRID_WIDTH, GRID_HEIGHT);
+document.body.append(life.canvas.element);
+
+life.canvas.element.addEventListener('mousedown', event => {
+    const bb = life.canvas.element.getBoundingClientRect();
+    const x = Math.floor( (event.clientX - bb.left) / bb.width * life.canvas.element.width );
+    const y = Math.floor( (event.clientY - bb.top) / bb.height * life.canvas.element.height );
+    
+    console.log({
+        x,
+        y,
+        live: life.gridState[y][x],
+        validNeighbors: life.getValidNeighbors(x, y),
+        liveNeighbors: life.getValidNeighbors(x, y).reduce((acc, curr) => acc + curr, 0)
+    });
+
+    life.gridBuf[y][x] = true;
+    life.canvas.setPixel(x, y, 255, 255, 255, 255);
+    life.canvas.updateCanvas();
+})
