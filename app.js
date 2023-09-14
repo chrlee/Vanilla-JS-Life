@@ -1,8 +1,7 @@
 class Canvas {
-    constructor(width, height, pixelSize) {
+    constructor(width, height) {
         this.width = width;
         this.height = height;
-        this.pixelSize = pixelSize;
         this.canvas = this.createCanvas();
         this.buffer = this.canvasImageData();
     }
@@ -30,23 +29,52 @@ class Canvas {
         this.buffer.data[index + 2] = b;
         this.buffer.data[index + 3] = a;
     }
+    randomizePixels(){
+        for(let i = 0; i < this.width; ++i){
+            for(let j = 0; j < this.height; ++j) {
+                this.setPixel(i, j, Math.random() * 255, Math.random() * 255, Math.random() * 255, 255);
+            }
+        }
+    }
     updateCanvas() {
         this.canvasContext().putImageData(this.buffer, 0, 0);
     }
 };
 
+class Life extends Canvas {
+    constructor(width, height){
+        super(width, height);
+        this.paused = true;
+
+        window.requestAnimationFrame = window.requestAnimationFrame ||
+                               window.mozRequestAnimationFrame ||
+                               window.webkitRequestAnimationFrame ||             
+                               window.msRequestAnimationFrame;
+        document.addEventListener('keydown', () => {
+            console.log(this.paused);
+            this.paused = !this.paused;
+        })
+        const start = this.startAnimation();
+    }
+    startAnimation() {
+        const animate = this.startAnimation.bind(this);
+        if(!this.paused){
+            this.randomizePixels();
+            this.updateCanvas();
+        }
+
+        setTimeout(() => {
+            requestAnimationFrame(animate);
+        }, 1000);
+    }
+
+}
+
 const GRID_WIDTH = 100;
 const GRID_HEIGHT = 100;
 
-const canvas = new Canvas(GRID_WIDTH, GRID_HEIGHT, 16);
+const canvas = new Life(GRID_WIDTH, GRID_HEIGHT);
 document.body.append(canvas.canvas);
-
-for(let i = 0; i < GRID_WIDTH; ++i){
-    for(let j = 0; j < GRID_HEIGHT; ++j) {
-        canvas.setPixel(i, j, Math.random() * 255, Math.random() * 255, Math.random() * 255, 255);
-    }
-}
-
-console.log(canvas.canvasImageData());
-
+canvas.randomizePixels();
 canvas.updateCanvas();
+console.log(canvas.canvasImageData());
