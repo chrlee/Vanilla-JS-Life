@@ -70,7 +70,37 @@ class Life {
         this.canvas = new Canvas(this.setAllPixels.bind(this), width, height, 30);
         this.gridBuf = [...Array(height)].map(() => Array(width).fill(false));
         this.gridState = this.gridBuf.map((arr) => arr.slice());
-        this.randomSeed();
+        this.visited = this.gridBuf.map((arr) => arr.slice());
+        this.centerWeightedSeed();
+    }
+
+    colors = {
+        black: [17, 17, 17, 255],
+        visitedBlack: [50, 50, 50, 255],
+        white: [200, 200, 200, 255],
+        red: [200, 17, 17, 255],
+        green: [17, 200, 17, 255],
+        getBlack(visited) {
+            return visited ? this.visitedBlack : this.black;
+        }
+    }
+    centerWeightedSeed() {
+        const center = [Math.floor(this.width / 2), Math.floor(this.height / 2)];
+        for(let y = 0; y < this.height; ++y) {
+            for(let x = 0; x < this.width; ++x) {
+                const dCenter = Math.sqrt(Math.pow(center[0] - x, 2) + Math.pow(center[1] - y, 2));
+                const live = Math.floor(Math.random() * dCenter) < 2 ;
+                this.gridBuf[y][x] = live;
+            }
+        }
+        for(let y = 0; y < this.height; ++y) {
+            for(let x = 0; x < this.width; ++x) {
+                const color = this.gridBuf[y][x] ? this.colors.white : this.colors.black;
+                this.canvas.setPixel(x, y, ...color);
+            }
+        }
+        this.gridState = this.gridBuf.map((arr) => arr.slice()); 
+        this.canvas.updateCanvas(); 
     }
     randomSeed() {
         for(let y = 0; y < this.height; ++y) {
@@ -81,7 +111,7 @@ class Life {
         }
         for(let y = 0; y < this.height; ++y) {
             for(let x = 0; x < this.width; ++x) {
-                const color = this.gridBuf[y][x] ? [255, 255, 255, 255] : [0, 0, 0, 255];
+                const color = this.gridBuf[y][x] ? this.colors.white : this.colors.black;
                 this.canvas.setPixel(x, y, ...color);
             }
         }
@@ -91,20 +121,16 @@ class Life {
     setSinglePixel(x, y) {
         this.gridBuf[y][x] = true;
         this.gridState[y][x] = true;
-        this.canvas.setPixel(x, y, 255, 255, 255, 255);
+        this.canvas.setPixel(x, y, ...this.colors.white);
         this.canvas.updateCanvas();
     }
     setAllPixels() {
         for(let y = 0; y < this.height; ++y) {
             for(let x = 0; x < this.width; ++x) {
                 const live = this.checkPixel(x, y);
-                this.gridBuf[y][x] = live;
-            }
-        }
-        for(let y = 0; y < this.height; ++y) {
-            for(let x = 0; x < this.width; ++x) {
-                const color = this.gridBuf[y][x] ? [255, 255, 255, 255] : [0, 0, 0, 255];
-                this.canvas.setPixel(x, y, ...color);
+                this.gridBuf[y][x] = live[0];
+                this.visited[y][x] = this.visited[y][x] || live[0];
+                this.canvas.setPixel(x, y, ...live[1]);
             }
         }
         this.gridState = this.gridBuf.map((arr) => arr.slice());
@@ -113,10 +139,10 @@ class Life {
     checkPixel(x, y) {
         const live = this.gridState[y][x];
         const liveNeighbors = this.getValidNeighbors(x, y).reduce((acc, curr) => acc + curr, 0);
-        if(liveNeighbors < 2) return false;
-        else if(liveNeighbors == 2 && live) return true;
-        else if(liveNeighbors === 3) return true;
-        return false;
+        if(liveNeighbors < 2) return [false, live ? this.colors.red : this.colors.getBlack(this.visited[y][x])];
+        else if(liveNeighbors == 2 && live) return [true, this.colors.white];
+        else if(liveNeighbors === 3) return [true, live ? this.colors.white : this.colors.green];
+        return [false, live ? this.colors.red : this.colors.getBlack(this.visited[y][x])];
     }
     getValidNeighbors(x, y) {
         const neighborTranslation = [
