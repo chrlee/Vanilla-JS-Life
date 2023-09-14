@@ -75,7 +75,7 @@ class Life {
     randomSeed() {
         for(let y = 0; y < this.height; ++y) {
             for(let x = 0; x < this.width; ++x) {
-                const live = Math.floor(Math.random() * 25) < 1 ;
+                const live = Math.floor(Math.random() * 20) < 1 ;
                 this.gridBuf[y][x] = live;
             }
         }
@@ -86,6 +86,12 @@ class Life {
             }
         }
         this.gridState = this.gridBuf.map((arr) => arr.slice()); 
+        this.canvas.updateCanvas();
+    }
+    setSinglePixel(x, y) {
+        this.gridBuf[y][x] = true;
+        this.gridState[y][x] = true;
+        this.canvas.setPixel(x, y, 255, 255, 255, 255);
         this.canvas.updateCanvas();
     }
     setAllPixels() {
@@ -150,8 +156,8 @@ class Life {
     }
 }
 
-const GRID_WIDTH = 100;
-const GRID_HEIGHT = 100;
+const GRID_WIDTH = 300;
+const GRID_HEIGHT = 300;
 
 const life = new Life(GRID_WIDTH, GRID_HEIGHT);
 document.body.append(life.canvas.element);
@@ -169,7 +175,5 @@ life.canvas.element.addEventListener('mousedown', event => {
         liveNeighbors: life.getValidNeighbors(x, y).reduce((acc, curr) => acc + curr, 0)
     });
 
-    life.gridBuf[y][x] = true;
-    life.canvas.setPixel(x, y, 255, 255, 255, 255);
-    life.canvas.updateCanvas();
+    life.setSinglePixel(x, y);
 })
