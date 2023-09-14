@@ -89,7 +89,7 @@ class Life {
         for(let y = 0; y < this.height; ++y) {
             for(let x = 0; x < this.width; ++x) {
                 const dCenter = Math.sqrt(Math.pow(center[0] - x, 2) + Math.pow(center[1] - y, 2));
-                const live = Math.floor(Math.random() * dCenter) < 2 ;
+                const live = Math.floor(Math.random() * dCenter) < 4 ;
                 this.gridBuf[y][x] = live;
             }
         }
