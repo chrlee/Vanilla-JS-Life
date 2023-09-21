@@ -12,7 +12,6 @@ class Canvas {
                                window.webkitRequestAnimationFrame ||             
                                window.msRequestAnimationFrame;
         document.addEventListener('keydown', () => {
-            console.log(this.paused);
             this.paused = !this.paused;
         })
         this.startAnimation(animate);
