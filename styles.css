@@ -1,7 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono&display=swap');
+
 body {
     width: 100vw;
     height: 100vh;
     overflow: hidden;
+    font-family: 'Space Mono', sans-serif;
 }
 
 canvas {
@@ -12,4 +15,13 @@ canvas {
     image-rendering: -webkit-crisp-edges;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+}
+
+.instructions {
+    position: absolute;
+    color: white;
+    background-color: rgba(10, 10, 10, 0.6);
+    margin: 1rem;
+    padding: 1rem;
+    max-width: 40vw;
 }
