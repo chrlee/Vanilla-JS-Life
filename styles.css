@@ -17,11 +17,15 @@ canvas {
     image-rendering: crisp-edges;
 }
 
-.instructions {
+div {
     position: absolute;
     color: white;
     background-color: rgba(10, 10, 10, 0.6);
     margin: 1rem;
     padding: 1rem;
     max-width: 40vw;
+}
+
+.hidden {
+    display: none;
 }

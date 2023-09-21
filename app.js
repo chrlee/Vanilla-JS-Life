@@ -202,4 +202,8 @@ life.canvas.element.addEventListener('mousedown', event => {
     });
 
     life.setSinglePixel(x, y);
-})
+});
+
+document.addEventListener('keydown', () => {
+    document.querySelector("div").className = "hidden";
+});
